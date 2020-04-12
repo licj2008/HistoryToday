@@ -13,17 +13,15 @@ import android.widget.TextView;
 import com.yunshuting.historytoday.util.BizApi;
 import com.yunshuting.historytoday.util.HistoryAdapter;
 import com.yunshuting.historytoday.util.HistoryDto;
-import com.yunshuting.historytoday.util.MyIntercepter;
 import com.yunshuting.historytoday.util.historyBean;
 
-import java.io.IOException;
+import java.util.Calendar;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import okhttp3.Interceptor;
+import butterknife.OnClick;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -37,6 +35,11 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.tv_info)
     TextView tvMsg;
+    @BindView(R.id.tv_cur_day)
+    TextView tvToday;
+
+    private int m;
+    private int d;
 
     final int PAGESIZE = 90;
     HistoryAdapter adapter;
@@ -66,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
                 request();
             }
         });
+        initDate();
         request();
     }
 
@@ -82,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         BizApi api = retrofit.create(BizApi.class);
-        Call<HistoryDto> call = api.getListData(4, 9, PAGESIZE);
+        Call<HistoryDto> call = api.getListData(m, d, PAGESIZE);
 
             call.enqueue(new Callback<HistoryDto>() {
                 @Override
@@ -120,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                requestListData(4,5);
+                requestListData(m,d);
             }
         }).start();
     }
@@ -132,6 +136,83 @@ public class MainActivity extends AppCompatActivity {
     private void  showErrorMsg(String str) {
         tvMsg.setText("获取数据出错:" + str);
 
+    }
+
+    private void initDate() {
+        Calendar c = Calendar.getInstance();
+        m = c.get(c.MONTH) +1;
+        d = c.get(c.DAY_OF_MONTH);
+        showDate();
+    }
+
+    private void setOffset(int offset) {
+        if (offset > 0) {
+            if (m == 1 || m == 3 || m == 5 || m == 7 || m == 8 || m == 10 || m == 12) {
+                if(d<31) {
+                    d = d+1;
+                } else {
+                    d = 1;
+                    if(m == 12) {
+                        m = 1;
+                    } else {
+                        m = m + 1;
+                    }
+                }
+
+            } else if (m == 4 || m == 6 || m == 9 || m == 11) {
+                if(d<30) {
+                    d = d+1;
+                } else {
+                    d = 1;
+                    m = m + 1;
+                }
+            } else if (m == 2) {
+                if(d<29) {
+                    d = d+1;
+                } else {
+                    d = 1;
+                    m = m + 1;
+                }
+            }
+        } else {
+            if (d>1) {
+                d = d-1;
+            } else if(d ==1) {
+                if(m ==1 ) {
+                    m = 12;
+                    d = 31;
+                } else if (m == 3) {
+                    m = m-1;
+                    d=29;
+                } else if (m ==2 ||m == 4 || m == 6 || m == 9 || m == 11) {
+                    m = m-1;
+                    d =31;
+                } else if ( m == 5 || m == 7 || m == 8 || m == 10 || m == 12) {
+                    m = m -1;
+                    d =30;
+                }
+            }
+        }
+        showDate();
+        request();
+    }
+    private void showDate() {
+        tvToday.setText(m + "月" + d + "日");
+    }
+
+    @OnClick({R.id.tv_pre_day,R.id.tv_next_day}) //多个控件可以一起发在里面进行监听
+    public void sayHi(View view) {
+        switch (view.getId()) {
+            case R.id.tv_pre_day:
+                setOffset(-1);
+                break;
+            case R.id.tv_next_day:
+                setOffset(1);
+                break;
+
+            default:
+                break;
+        }
     }
 
 
